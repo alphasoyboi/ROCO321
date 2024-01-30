@@ -13,15 +13,18 @@ using namespace cv;
 
 Vec3f RGBtoHSV(const Vec3b& rgb)
 {
+    // create matrix from rgb pixel
     Mat3f rgbMat(static_cast<Vec3f>(rgb));
 
+    // normalize values
     rgbMat *= 1.0/255.0;
 
+    // convert image to hsv color space
     Mat3f hsvMat;
     cvtColor(rgbMat, hsvMat, COLOR_BGR2HSV);
 
+    // pull out pixel value to return
     Vec3f hsv = hsvMat(0,0);
-
     return hsv;
 }
 
