@@ -20,8 +20,10 @@ LIBS +=    -lopencv_core411 \
 LIBS += -lws2_32
 
 SOURCES += \
-    main.cpp
+    main.cpp \
+    hsv_config.cpp
 
 HEADERS += \
     ..\owl.h \
+    hsv_config.h
 

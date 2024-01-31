@@ -37,16 +37,16 @@ string getColorString(const Vec3f& hsv)
         if ((hsv[0] <= 20.0f || hsv[0] >= 340.0f) && hsv[1] >= 0.5f) {// && hsv[2] >= 0.5f) {
             return "red";
         }
-        if ((hsv[0] <= 55.0f && hsv[0] >= 35.0f) && hsv[1] >= 0.45f) {// && hsv[2] >= 0.45f) {
+        else if ((hsv[0] <= 55.0f && hsv[0] >= 35.0f) && hsv[1] >= 0.45f) {// && hsv[2] >= 0.45f) {
             return "yellow";
         }
-        if ((hsv[0] <= 175.0f && hsv[0] >= 100.0f) && hsv[1] >= 0.3f) {// && hsv[2] >= 0.3f) {
+        else if ((hsv[0] <= 175.0f && hsv[0] >= 100.0f) && hsv[1] >= 0.3f) {// && hsv[2] >= 0.3f) {
            return "green";
         }
-        if ((hsv[0] <= 245.0f && hsv[0] >= 185.0f) && hsv[1] >= 0.35f) {// && hsv[2] >= 0.5f) {
+        else if ((hsv[0] <= 245.0f && hsv[0] >= 185.0f) && hsv[1] >= 0.35f) {// && hsv[2] >= 0.5f) {
            return "blue";
         }
-        if ((hsv[0] <= 335.0f && hsv[0] >= 295.0f) && hsv[1] >= 0.3f) {// && hsv[2] >= 0.45f) {
+        else if ((hsv[0] <= 335.0f && hsv[0] >= 295.0f) && hsv[1] >= 0.3f) {// && hsv[2] >= 0.45f) {
            return "magenta";
         }
     }

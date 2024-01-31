@@ -7,6 +7,7 @@
 #include <string>
 
 #include "../owl.h"
+#include "hsv_config.h"
 
 using namespace std;
 using namespace cv;
@@ -16,30 +17,31 @@ static const String kWinTitleFiltered = "left filtered";
 
 static const int kMaxH = 360;
 static const int kMaxSV = 1000;
-static int lowHue = 0, lowSat = 0, lowVal = 0;
-static int highHue = kMaxH, highSat = kMaxSV, highVal = kMaxSV;
+static HSVConfig hsv{{0, 0, 0, 0, 0, 0}};
 
-static void onLowHueThreshTrackbar(int, void *);
-static void onHighHueThreshTrackbar(int, void *);
-static void onLowSatThreshTrackbar(int, void *);
-static void onHighSatThreshTrackbar(int, void *);
-static void onLowValThreshTrackbar(int, void *);
-static void onHighValThreshTrackbar(int, void *);
+static void onlhThreshTrackbar(int, void *);
+static void onhhThreshTrackbar(int, void *);
+static void onlsThreshTrackbar(int, void *);
+static void onhsThreshTrackbar(int, void *);
+static void onlvThreshTrackbar(int, void *);
+static void onhvThreshTrackbar(int, void *);
 
 int main()
 {
+    hsv = loadConfig("test.txt");
+
     //connect with the owl and load calibration values
     robotOwl owl(1500, 1475, 1520, 1525, 1520);
 
     namedWindow(kWinTitleRaw);
     namedWindow(kWinTitleFiltered);
 
-    createTrackbar("Low H",  kWinTitleRaw, &lowHue, kMaxH, onLowHueThreshTrackbar);
-    createTrackbar("High H", kWinTitleRaw, &highHue, kMaxH, onHighHueThreshTrackbar);
-    createTrackbar("Low S",  kWinTitleRaw, &lowSat, kMaxSV, onLowSatThreshTrackbar);
-    createTrackbar("High S", kWinTitleRaw, &highSat, kMaxSV, onHighSatThreshTrackbar);
-    createTrackbar("Low V",  kWinTitleRaw, &lowVal, kMaxSV, onLowValThreshTrackbar);
-    createTrackbar("High V", kWinTitleRaw, &highVal, kMaxSV, onHighValThreshTrackbar);
+    createTrackbar("Low H",  kWinTitleRaw, &hsv.lh, kMaxH, onlhThreshTrackbar);
+    createTrackbar("High H", kWinTitleRaw, &hsv.hh, kMaxH, onhhThreshTrackbar);
+    createTrackbar("Low S",  kWinTitleRaw, &hsv.ls, kMaxSV, onlsThreshTrackbar);
+    createTrackbar("High S", kWinTitleRaw, &hsv.hs, kMaxSV, onhsThreshTrackbar);
+    createTrackbar("Low V",  kWinTitleRaw, &hsv.lv, kMaxSV, onlvThreshTrackbar);
+    createTrackbar("High V", kWinTitleRaw, &hsv.hv, kMaxSV, onhvThreshTrackbar);
 
     bool running = true;
     while (running){
@@ -50,7 +52,7 @@ int main()
         //your tracking code here
         //left *= 1./255;
         cvtColor(left, hsvLeft, COLOR_BGR2HSV);
-        inRange(hsvLeft, Scalar(lowHue, lowSat, lowVal), Scalar(highHue, highSat, highVal), filteredLeft);
+        inRange(hsvLeft, Scalar(hsv.lh, hsv.ls, hsv.lv), Scalar(hsv.hh, hsv.hs, hsv.hv), filteredLeft);
 
         //display camera frame
         imshow(kWinTitleRaw, left);
@@ -63,35 +65,37 @@ int main()
                 break;
         }
     }
+
+    saveConfig("test.txt", hsv);
 }
 
-static void onLowHueThreshTrackbar(int, void *)
+static void onlhThreshTrackbar(int, void *)
 {
-    lowHue = min(highHue-1, lowHue);
-    setTrackbarPos("Low H", kWinTitleRaw, lowHue);
+    hsv.lh = min(hsv.hh-1, hsv.lh);
+    setTrackbarPos("Low H", kWinTitleRaw, hsv.lh);
 }
-static void onHighHueThreshTrackbar(int, void *)
+static void onhhThreshTrackbar(int, void *)
 {
-    highHue = max(highHue, lowHue+1);
-    setTrackbarPos("High H", kWinTitleRaw, highHue);
+    hsv.hh = max(hsv.hh, hsv.lh+1);
+    setTrackbarPos("High H", kWinTitleRaw, hsv.hh);
 }
-static void onLowSatThreshTrackbar(int, void *)
+static void onlsThreshTrackbar(int, void *)
 {
-    lowSat = min(highSat-1, lowSat);
-    setTrackbarPos("Low S", kWinTitleRaw, lowSat);
+    hsv.ls = min(hsv.hs-1, hsv.ls);
+    setTrackbarPos("Low S", kWinTitleRaw, hsv.ls);
 }
-static void onHighSatThreshTrackbar(int, void *)
+static void onhsThreshTrackbar(int, void *)
 {
-    highSat = max(highSat, lowSat+1);
-    setTrackbarPos("High S", kWinTitleRaw, highSat);
+    hsv.hs = max(hsv.hs, hsv.ls+1);
+    setTrackbarPos("High S", kWinTitleRaw, hsv.hs);
 }
-static void onLowValThreshTrackbar(int, void *)
+static void onlvThreshTrackbar(int, void *)
 {
-    lowVal = min(highVal-1, lowVal);
-    setTrackbarPos("Low V", kWinTitleRaw, lowVal);
+    hsv.lv = min(hsv.hv-1, hsv.lv);
+    setTrackbarPos("Low V", kWinTitleRaw, hsv.lv);
 }
-static void onHighValThreshTrackbar(int, void *)
+static void onhvThreshTrackbar(int, void *)
 {
-    highVal = max(highVal, lowVal+1);
-    setTrackbarPos("High V", kWinTitleRaw, highVal);
+    hsv.hv = max(hsv.hv, hsv.lv+1);
+    setTrackbarPos("High V", kWinTitleRaw, hsv.hv);
 }
