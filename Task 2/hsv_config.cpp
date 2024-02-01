@@ -12,6 +12,7 @@ HSVConfig loadConfig(const char* filepath)
         int i = 0, item = 0;
         while (file >> item) {
             config.data[i] = item;
+            i++;
         }
         file.close();
     } else {
@@ -25,7 +26,7 @@ void saveConfig(const char* filepath, const HSVConfig& config)
     std::ofstream file(filepath);
     if (file.is_open()) {
         for (int i = 0; i < HSV_CONFIG_ITEMS; i++) {
-            file << config.data << " ";
+            file << config.data[i] << " ";
         }
         file.close();
     }
