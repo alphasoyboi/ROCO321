@@ -37,7 +37,7 @@ string getColorString(const Vec3f& hsv)
         if ((hsv[0] <= 20.0f || hsv[0] >= 340.0f) && hsv[1] >= 0.5f) {// && hsv[2] >= 0.5f) {
             return "red";
         }
-        else if ((hsv[0] <= 55.0f && hsv[0] >= 35.0f) && hsv[1] >= 0.45f) {// && hsv[2] >= 0.45f) {
+        else if ((hsv[0] <= 55.0f && hsv[0] >= 30.0f) && hsv[1] >= 0.45f) {// && hsv[2] >= 0.45f) {
             return "yellow";
         }
         else if ((hsv[0] <= 175.0f && hsv[0] >= 100.0f) && hsv[1] >= 0.3f) {// && hsv[2] >= 0.3f) {

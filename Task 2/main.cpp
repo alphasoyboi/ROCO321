@@ -14,14 +14,13 @@ using namespace cv;
 
 #define FRAME_WIDTH 640
 #define FRAME_HEIGHT 480
+#define FRAME_CENTER_X FRAME_WIDTH/2
+#define FRAME_CENTER_Y FRAME_HEIGHT/2
 
 static const String kWinTitleRaw      = "left";
 static const String kWinTitleFiltered = "left filtered";
 
-static const int kMaxH = 360;
-static const int kMaxSV = 1000;
-static HSVConfig hsv{{0, kMaxH, 0, kMaxSV, 0, kMaxSV}};
-static const char* kConfigFilepath = "hsv_conf.txt";
+static HSVConfig hsv;
 
 static void onLowHueThreshTrackbar(int, void *);
 static void onHighHueThreshTrackbar(int, void *);
@@ -35,21 +34,29 @@ int main()
     //connect with the owl and load calibration values
     robotOwl owl(1500, 1475, 1520, 1525, 1520);
 
-    hsv = loadConfig(kConfigFilepath);
+    hsv = loadConfig(HSV_CONFIG_FILEPATH);
     namedWindow(kWinTitleRaw);
     namedWindow(kWinTitleFiltered);
-    createTrackbar("Low Hue",  kWinTitleRaw, &hsv.lh, kMaxH, onLowHueThreshTrackbar);
-    createTrackbar("High Hue", kWinTitleRaw, &hsv.hh, kMaxH, onHighHueThreshTrackbar);
-    createTrackbar("Low Sat",  kWinTitleRaw, &hsv.ls, kMaxSV, onLowSatThreshTrackbar);
-    createTrackbar("High Sat", kWinTitleRaw, &hsv.hs, kMaxSV, onHighSatThreshTrackbar);
-    createTrackbar("Low Val",  kWinTitleRaw, &hsv.lv, kMaxSV, onLowValThreshTrackbar);
-    createTrackbar("High Val", kWinTitleRaw, &hsv.hv, kMaxSV, onHighValThreshTrackbar);
+    createTrackbar("Low Hue",  kWinTitleRaw, &hsv.lh, MAX_H, onLowHueThreshTrackbar);
+    createTrackbar("High Hue", kWinTitleRaw, &hsv.hh, MAX_H, onHighHueThreshTrackbar);
+    createTrackbar("Low Sat",  kWinTitleRaw, &hsv.ls, MAX_SV, onLowSatThreshTrackbar);
+    createTrackbar("High Sat", kWinTitleRaw, &hsv.hs, MAX_SV, onHighSatThreshTrackbar);
+    createTrackbar("Low Val",  kWinTitleRaw, &hsv.lv, MAX_SV, onLowValThreshTrackbar);
+    createTrackbar("High Val", kWinTitleRaw, &hsv.hv, MAX_SV, onHighValThreshTrackbar);
 
+    Mat left, right, hsvLeft, filteredLeft;
     bool running = true;
-    while (running){
+    bool tracking = false;
+    while (running) {
         //read the owls camera frames
-        Mat left, right, hsvLeft, filteredLeft;
         owl.getCameraFrames(left, right);
+
+        string trackText = "t = toggle tracking";
+        string saveText = "s = save hsv config";
+        string quitText = "q = quit";
+        putText(left, trackText, {5, 30}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA); //draw the string containing hsv components to the image
+        putText(left, saveText, {5, 60}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA); //draw the string containing hsv components to the image
+        putText(left, quitText, {5, 90}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA); //draw the string containing hsv components to the image
 
         //your tracking code here
         cvtColor(left, hsvLeft, COLOR_BGR2HSV);
@@ -57,11 +64,27 @@ int main()
 
         Moments m = moments(filteredLeft, true);
         Point center(int(m.m10/m.m00), int(m.m01/m.m00));
+        center.x = (center.x > FRAME_HEIGHT) || (center.x < -FRAME_HEIGHT) ? FRAME_CENTER_X : center.x;
+        center.y = (center.y > FRAME_HEIGHT) || (center.y < -FRAME_HEIGHT) ? FRAME_CENTER_Y : center.y;
         circle(left, center, 5, Scalar(128), -1);
         circle(filteredLeft, center, 5, Scalar(128), -1);
 
-        if ((center.x - FRAME_WIDTH/2) > 10) {
-            owl.
+        if (tracking) {
+            string statusText = "head tracking enabled";
+            putText(left, statusText, {5, FRAME_HEIGHT - 5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA);
+
+            int xr, yr, xl, yl, neck;
+            owl.getRelativeServoPositions(xr, yr, xl, yl, neck);
+            int xDiff = center.x - FRAME_CENTER_X;
+            int xMove = int(xDiff * 0.25f);
+            int neckMove = (xl < 50) && (xl > -50) ? 0 : int(xl * 0.125f);
+            owl.setServoRelativePositions(0, 0, xMove, 0, neckMove);
+            int yDiff = center.y - FRAME_CENTER_Y;
+            int yMove = int(yDiff * 0.25);
+            owl.setServoRelativePositions(0, 0, 0, -yMove, 0);
+        } else {
+            string statusText = "head tracking disbaled";
+            putText(left, statusText, {5, FRAME_HEIGHT - 5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA);
         }
 
         //display camera frame
@@ -73,8 +96,10 @@ int main()
             running = false;
             break;
         case 's':
-            saveConfig(kConfigFilepath, hsv);
+            saveConfig(HSV_CONFIG_FILEPATH, hsv);
             break;
+        case 't':
+            tracking = !tracking;
         }
     }
 
