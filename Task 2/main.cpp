@@ -16,6 +16,9 @@ using namespace cv;
 #define FRAME_HEIGHT 480
 #define FRAME_CENTER_X FRAME_WIDTH/2
 #define FRAME_CENTER_Y FRAME_HEIGHT/2
+#define MOVE_FACTOR_X 0.25f
+#define MOVE_FACTOR_Y 0.25f
+#define MOVE_FACTOR_NECK MOVE_FACTOR_X/2
 
 static const String kWinTitleRaw      = "left";
 static const String kWinTitleFiltered = "left filtered";
@@ -63,7 +66,8 @@ int main()
         inRange(hsvLeft, Scalar(hsv.lh, hsv.ls, hsv.lv), Scalar(hsv.hh, hsv.hs, hsv.hv), filteredLeft);
 
         Moments m = moments(filteredLeft, true);
-        Point center(int(m.m10/m.m00), int(m.m01/m.m00));
+        Point center{int(m.m10/m.m00), int(m.m01/m.m00)};
+        //center = (m.m00 < 10) ? Point{FRAME_CENTER_X, FRAME_CENTER_Y} : Point{int(m.m10/m.m00), int(m.m01/m.m00)};
         center.x = (center.x > FRAME_HEIGHT) || (center.x < -FRAME_HEIGHT) ? FRAME_CENTER_X : center.x;
         center.y = (center.y > FRAME_HEIGHT) || (center.y < -FRAME_HEIGHT) ? FRAME_CENTER_Y : center.y;
         circle(left, center, 5, Scalar(128), -1);
@@ -76,11 +80,11 @@ int main()
             int xr, yr, xl, yl, neck;
             owl.getRelativeServoPositions(xr, yr, xl, yl, neck);
             int xDiff = center.x - FRAME_CENTER_X;
-            int xMove = int(xDiff * 0.25f);
-            int neckMove = (xl < 50) && (xl > -50) ? 0 : int(xl * 0.125f);
+            int xMove = int(xDiff * MOVE_FACTOR_X);
+            int neckMove = (xl < 50) && (xl > -50) ? 0 : int(xl * MOVE_FACTOR_NECK);
             owl.setServoRelativePositions(0, 0, xMove, 0, neckMove);
             int yDiff = center.y - FRAME_CENTER_Y;
-            int yMove = int(yDiff * 0.25);
+            int yMove = int(yDiff * MOVE_FACTOR_Y);
             owl.setServoRelativePositions(0, 0, 0, -yMove, 0);
         } else {
             string statusText = "head tracking disbaled";
@@ -92,7 +96,7 @@ int main()
         imshow(kWinTitleFiltered, filteredLeft);
         switch(waitKey(10)) {
         case 'q':
-        case 27:
+        case 27: // ESC
             running = false;
             break;
         case 's':
