@@ -67,12 +67,12 @@ int main()
         Point centrePoint(left.size().width/2, left.size().height/2);
         Vec3b pixelValue = left.at<Vec3b>(centrePoint);
 
-        // drawing functions
+    	// drawing functions
 		// draw a circle to show the pixel being processed
         circle(left, centrePoint, 15, Scalar(255,255,255), 2); 
 		// convert the pixel to hsv
         Vec3f hsv = BGRtoHSV(pixelValue); 
-		 //draw the string containing hsv components to the image
+		//draw the string containing hsv components to the image
         string hsvText = "(" + to_string(hsv[0]) + ", " + to_string(hsv[1]) + ", " + to_string(hsv[2]) + ")";
         putText(left, hsvText, centrePoint+Point(-250,100), FONT_HERSHEY_SIMPLEX, 1, Scalar(255,255,255), 2);
 		//draw the string denoting the estimated color to the image
