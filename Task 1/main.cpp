@@ -34,19 +34,19 @@ string getColorString(const Vec3f& hsv)
     // make sure color isn't black by checking value (hsv[2]),
     // then compare upper and lower bounds of hue (hsv[0]), and finally saturation (hsv[1]).
     if (hsv[2] >= 0.2f) {
-        if ((hsv[0] <= 20.0f || hsv[0] >= 340.0f) && hsv[1] >= 0.5f) {// && hsv[2] >= 0.5f) {
+        if ((hsv[0] <= 20.0f || hsv[0] >= 340.0f) && hsv[1] >= 0.5f) {
             return "red";
         }
-        else if ((hsv[0] <= 55.0f && hsv[0] >= 30.0f) && hsv[1] >= 0.45f) {// && hsv[2] >= 0.45f) {
+        else if ((hsv[0] <= 55.0f && hsv[0] >= 30.0f) && hsv[1] >= 0.45f) {
             return "yellow";
         }
-        else if ((hsv[0] <= 175.0f && hsv[0] >= 100.0f) && hsv[1] >= 0.3f) {// && hsv[2] >= 0.3f) {
+        else if ((hsv[0] <= 175.0f && hsv[0] >= 100.0f) && hsv[1] >= 0.3f) {
            return "green";
         }
-        else if ((hsv[0] <= 245.0f && hsv[0] >= 185.0f) && hsv[1] >= 0.35f) {// && hsv[2] >= 0.5f) {
+        else if ((hsv[0] <= 245.0f && hsv[0] >= 185.0f) && hsv[1] >= 0.35f) {
            return "blue";
         }
-        else if ((hsv[0] <= 335.0f && hsv[0] >= 295.0f) && hsv[1] >= 0.3f) {// && hsv[2] >= 0.45f) {
+        else if ((hsv[0] <= 335.0f && hsv[0] >= 295.0f) && hsv[1] >= 0.3f) {
            return "magenta";
         }
     }
@@ -68,12 +68,16 @@ int main()
         Vec3b pixelValue = left.at<Vec3b>(centrePoint);
 
         // drawing functions
-        circle(left, centrePoint, 15, Scalar(255,255,255), 2); // draw a circle to show the pixel being processed
-        Vec3f hsv = BGRtoHSV(pixelValue); // convert the pixel to hsv
+		// draw a circle to show the pixel being processed
+        circle(left, centrePoint, 15, Scalar(255,255,255), 2); 
+		// convert the pixel to hsv
+        Vec3f hsv = BGRtoHSV(pixelValue); 
+		 //draw the string containing hsv components to the image
         string hsvText = "(" + to_string(hsv[0]) + ", " + to_string(hsv[1]) + ", " + to_string(hsv[2]) + ")";
-        putText(left, hsvText, centrePoint+Point(-250,100), FONT_HERSHEY_SIMPLEX, 1, Scalar(255,255,255), 2); //draw the string containing hsv components to the image
+        putText(left, hsvText, centrePoint+Point(-250,100), FONT_HERSHEY_SIMPLEX, 1, Scalar(255,255,255), 2);
+		//draw the string denoting the estimated color to the image
         string colorText = getColorString(hsv);
-        putText(left, colorText, centrePoint+Point(-50,50), FONT_HERSHEY_SIMPLEX, 1, Scalar(255,255,255), 2); //draw the string denoting the estimated color to the image
+        putText(left, colorText, centrePoint+Point(-50,50), FONT_HERSHEY_SIMPLEX, 1, Scalar(255,255,255), 2);
 
         // display image
         imshow("left", left);
