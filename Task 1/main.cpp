@@ -58,7 +58,8 @@ int main()
     //connect with the owl and load calibration values
     robotOwl owl(1500, 1475, 1520, 1525, 1520, true); //starts in "quiet mode" which switches off the servos.
 
-    while (true) {
+    bool running = true;
+    while (running) {
         // read the owls camera frames
         Mat left, right;
         owl.getCameraFrames(left, right);
@@ -81,7 +82,12 @@ int main()
 
         // display image
         imshow("left", left);
-        waitKey(30);
+        switch(waitKey(10)) {
+        case 'q':
+        case 27: // ESC
+            running = false;
+            break;
+	}
     }
 }
 
