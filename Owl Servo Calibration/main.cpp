@@ -16,7 +16,7 @@ void drawUI(Mat& left, Mat& right, char key);
 int main()
 {
     //connect with the owl and load calibration values
-    robotOwl owl(1500, 1475, 1520, 1525, 1520);
+    robotOwl owl(1495, 1530, 1575, 1430, 1560);
 
     while (true){
         //read the owls camera frames and record the users keypress

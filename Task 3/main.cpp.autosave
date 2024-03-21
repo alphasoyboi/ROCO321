@@ -91,11 +91,9 @@ int main()
             if (selecting) {
                 left(target_pos).copyTo(target);
                 imshow("target", target);
-                cout << "Target selected!\nStarting tracking code...\n";
             } else {
                 tracking = false;
                 owl.setServoRawPositions(rx_rst, ry_rst, lx_rst, ly_rst, neck);
-                destroyWindow("right");
             }
             selecting = !selecting;
             break;
