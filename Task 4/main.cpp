@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 {
 
     //connect with the owl and load calibration values
-    robotOwl owl(1500, 1475, 1520, 1525, 1520);
+    robotOwl owl(1475, 1510, 1550, 1440, 1560);
 
     //Calibration file paths
     string intrinsic_filename = "../intrinsics.xml";
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
     sgbm->setMode(StereoSGBM::MODE_SGBM);
 
     //Main program loop
-    while (1){
+    while (true) {
 
         //read the owls camera frames
         Mat left, right;

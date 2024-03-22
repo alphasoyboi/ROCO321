@@ -13,11 +13,12 @@
 using namespace std;
 using namespace cv;
 
-#define TARGET_SIZE 60 //adjust this to change the size of your target
+#define TARGET_SIZE 60
 #define FRAME_W 640
 #define FRAME_H 480
 #define MOVE_FACTOR 0.1f
 #define INTER_EYE_DIST 67
+#define SERVO_UPDATE_INTERVAL 250ms
 
 int   calculate_servo_movement(const Point& min_loc);
 float calculate_distance(float left_angle, float right_angle);
@@ -29,11 +30,10 @@ void  draw_help_overlay(Mat& left, Mat& right);
 int main()
 {
     // connect with the owl and load calibration values
-    robotOwl owl(1495, 1530, 1575, 1430, 1560);
+    robotOwl owl(1475, 1510, 1550, 1440, 1560);
     int rx_rst, ry_rst, lx_rst, ly_rst, neck;
     owl.getRawServoPositions(rx_rst, ry_rst, lx_rst, ly_rst, neck);
 
-    //===========================target selection loop==============================
     Mat left, right, target, l_match, r_match;
     Rect target_pos(FRAME_W/2 - TARGET_SIZE/2, FRAME_H/2 - TARGET_SIZE/2, TARGET_SIZE, TARGET_SIZE);
 
@@ -49,6 +49,7 @@ int main()
         // read the owls camera frames
         owl.getCameraFrames(left, right);
 
+        // selection mode or tracking mode
         if (selecting) {
             draw_selection_overlay(left, target_pos);
             imshow("left", left);
@@ -59,20 +60,21 @@ int main()
             minMaxLoc(l_match, &l_min_val, &l_max_val, &l_min_loc, &l_max_loc);
             minMaxLoc(r_match, &r_min_val, &r_max_val, &r_min_loc, &r_max_loc);
 
+            // get servo control parameters
             int l_move = calculate_servo_movement(l_min_loc);
             int r_move = calculate_servo_movement(r_min_loc);
 
             // move servos if tracking is enabled
             if (tracking) {
                 time_elap += chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - time_prev);
-                /*if (time_elap >= 250ms) {
+                if (time_elap >= SERVO_UPDATE_INTERVAL) {
                     owl.setServoRelativePositions(r_move, 0, l_move, 0, 0);
                     time_elap = 0ms;
-                }*/
-                owl.setServoRelativePositions(r_move, 0, l_move, 0, 0);
+                }
                 time_prev = chrono::high_resolution_clock::now();
             }
 
+            // calculate distance from servo angles
             float l_angle, r_angle, distance;
             owl.getServoAngles(l_angle, r_angle);
             distance = calculate_distance(l_angle, r_angle);
@@ -111,6 +113,9 @@ int main()
     }
 }
 
+// calculate how much to move servos to bring the target into the center of the frame
+// get the difference between the target point and the center of the frame
+// return the difference multiplied by a scaling factor
 int calculate_servo_movement(const Point& min_loc) {
     int diff = min_loc.x - FRAME_W/2;
     return int(diff * MOVE_FACTOR);
@@ -118,10 +123,13 @@ int calculate_servo_movement(const Point& min_loc) {
 
 // calculate distance from each eye using law of sines
 //     A
-//     /\      b=a*sinB/sinA
-//  c /  \ b   c=a*sinC/sinA
-//   /____\
-//  B  a   C
+//     /\            |\
+//  c /  \ b     opp | \ hyp
+//   /____\          |__\
+//  B  a   C        adj  X
+//
+// b = a*sinB/sinA  sinX = opp/hyp
+// c = a*sinC/sinA  X = B or C
 float calculate_distance(float left_angle, float right_angle) {
     left_angle = float(M_PI_2) - left_angle;
     right_angle = float(M_PI_2) - right_angle;
@@ -129,18 +137,22 @@ float calculate_distance(float left_angle, float right_angle) {
     // calculate each eye distance using sine laws
     float left_dist = INTER_EYE_DIST*sin(right_angle)/sin(eye_angle);
     float right_dist = INTER_EYE_DIST*sin(left_angle)/sin(eye_angle);
-    if (left_angle < 90) {
+    // use the smallest angle to calculate the distance from the point between the eyes
+    // opp=sinX*hyp
+    if (left_angle < right_angle) {
         return left_dist*sin(left_angle);
     } else {
         return right_dist*sin(right_angle);
     }
 }
 
+// draw target selection box and key binding info text
 void draw_selection_overlay(Mat& left, const Rect& target_pos) {
     rectangle(left, target_pos, Scalar(0, 255, 0), 2);
     putText(left, "press space to capture target", {5, FRAME_H - 5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA);
 }
 
+// draw target tracking box and distance estimate
 void draw_target_overlay(Mat& left, Mat& right, const Point& l_min_loc, const Point& r_min_loc, float distance) {
     rectangle(left, {l_min_loc.x, l_min_loc.y, TARGET_SIZE, TARGET_SIZE}, Scalar(0, 255, 0), 1);
     rectangle(right, {r_min_loc.x, r_min_loc.y, TARGET_SIZE, TARGET_SIZE}, Scalar(0, 255, 0), 1);
@@ -148,6 +160,7 @@ void draw_target_overlay(Mat& left, Mat& right, const Point& l_min_loc, const Po
     putText(right, to_string(distance) + "mm", {r_min_loc.x, r_min_loc.y-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA);
 }
 
+// draw tracking status info
 void draw_tracking_overlay(Mat& left, Mat& right, bool tracking) {
     if (tracking) {
         putText(left, "tracking enabled", {5, FRAME_H-85}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA);
@@ -158,6 +171,7 @@ void draw_tracking_overlay(Mat& left, Mat& right, bool tracking) {
     }
 }
 
+// draw key binding help
 void draw_help_overlay(Mat& left, Mat& right) {
     putText(left, "press t to toggle tracking", {5, FRAME_H-65}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 0), 1, LINE_AA);
     putText(right, "press t to toggle tracking", {5, FRAME_H-65}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 0), 1, LINE_AA);
