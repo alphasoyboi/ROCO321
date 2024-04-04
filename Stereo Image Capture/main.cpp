@@ -16,7 +16,7 @@ string outputFolder="..\\Stereo Image Capture\\CapturedImages";
 int main()
 {
     //connect with the owl and load calibration values
-    robotOwl owl(1475, 1510, 1550, 1440, 1560);
+    robotOwl owl(1485, 1505, 1555, 1445, 1560);
     int imgNumber=0;
 
     while (true){

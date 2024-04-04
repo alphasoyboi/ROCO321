@@ -48,7 +48,7 @@ OBJECTS_DIR   = debug
 SOURCES       = "..\Task 4\main.cpp" 
 OBJECTS       = debug/main.o
 
-DIST          =   "..\Task 4\main.cpp"
+DIST          =  ../owl.h "..\Task 4\main.cpp"
 QMAKE_TARGET  = Task4
 DESTDIR        = debug\ #avoid trailing-slash linebreak
 TARGET         = Task4.exe

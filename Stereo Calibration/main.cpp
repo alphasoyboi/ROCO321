@@ -22,10 +22,11 @@
      GitHub:        https://github.com/opencv/opencv/
    ************************************************** */
 
-/** Phil Culverhouse CRNS Plymouth University 2017
-/* changed intrinsics.yml & extrinsics.yml to xml files
+/* Phil Culverhouse CRNS Plymouth University 2017
+ * changed intrinsics.yml & extrinsics.yml to xml files
  * default to display stereo pairs during chequer board matching
 */
+
 #include "opencv2/calib3d.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"

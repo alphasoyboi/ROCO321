@@ -24,4 +24,5 @@ LIBS += -lws2_32
 SOURCES += \
     main.cpp
 
-HEADERS +=
+HEADERS += \
+    ../owl.h
