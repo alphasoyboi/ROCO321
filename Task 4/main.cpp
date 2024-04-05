@@ -61,6 +61,7 @@ private:
 
 void on_tb_sad_window_size(int pos, void* userdata);
 void on_tb_num_disparities(int pos, void* userdata);
+void on_mouse(int event, int x, int y, int flags, void *userdata);
 
 int main(int argc, char** argv) {
     // connect with the owl and load calibration values
@@ -104,6 +105,7 @@ int main(int argc, char** argv) {
     initUndistortRectifyMap(M2, D2, R2, P2, img_size, CV_16SC2, map21, map22);
 
 
+
     //==================================================Create Block Matcher==============================================
     int sad_window_size = 5;   //must be an odd number >=3
     int num_disparities = 144; //must be divisable by 16
@@ -128,8 +130,11 @@ int main(int argc, char** argv) {
     setTrackbarMin(NUM_DISPARITIES_TB_NAME, DISP_WIN_NAME, NUM_DISPARITIES_MIN);
     setTrackbarPos(NUM_DISPARITIES_TB_NAME, DISP_WIN_NAME, num_disparities);
 
+    Point disp_coords = Point(img_size/2);
+    setMouseCallback(DISP_WIN_NAME, on_mouse, &disp_coords);
+
     Mat left, right, eyes, disp, disp8;
-    ContinuousAverage<double, 64> distance;
+    ContinuousAverage<double, 16> distance;
 
     bool running = true;
     while (running) {
@@ -143,13 +148,12 @@ int main(int argc, char** argv) {
         // match left and right images to create disparity image
         sgbm->compute(left, right, disp);
 
-        distance.push(BASE_FOCAL_CONST/disp.at<short>(Point(disp.cols/2, disp.rows/2)));
+        distance.push(BASE_FOCAL_CONST/disp.at<short>(disp_coords));
         putText(left, "distance: " + to_string(distance.average()), {5, left.rows-25}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 0), 1, LINE_AA);
-        cout << distance.average() << '\n';
 
         // convert disparity map to an 8-bit greyscale image so it can be displayed (do not use for mesurements)
         disp.convertTo(disp8, CV_8U, 255/(num_disparities*16.));
-        circle(disp8, Point(img_size.width/2, img_size.height/2), 16, Scalar(255, 255, 255), 1);
+        circle(disp8, disp_coords, 8, Scalar(255, 255, 255), 1);
 
         // draw help text
         putText(left, "press q to quit", {5, left.rows-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 0), 1, LINE_AA);
@@ -170,11 +174,15 @@ int main(int argc, char** argv) {
     return 0;
 }
 
+void calibrate() {
+
+}
+
 void on_tb_sad_window_size(int pos, void* userdata) {
     int sad_window_size = (pos%2) ? pos : pos+1;
     setTrackbarPos(SAD_WIN_SIZE_TB_NAME, DISP_WIN_NAME, sad_window_size);
 
-    cv::Ptr<cv::StereoSGBM>& sgbm = *static_cast<cv::Ptr<cv::StereoSGBM>*>(userdata);
+    Ptr<StereoSGBM>& sgbm = *static_cast<Ptr<StereoSGBM>*>(userdata);
     sgbm->setBlockSize(sad_window_size);
     sgbm->setP1(8*3*sad_window_size*sad_window_size);
     sgbm->setP2(32*3*sad_window_size*sad_window_size);
@@ -184,7 +192,13 @@ void on_tb_num_disparities(int pos, void* userdata) {
     int num_disparities = pos - pos%16;
     setTrackbarPos(NUM_DISPARITIES_TB_NAME, DISP_WIN_NAME, num_disparities);
 
-    cv::Ptr<cv::StereoSGBM>& sgbm = *static_cast<cv::Ptr<cv::StereoSGBM>*>(userdata);
+    Ptr<StereoSGBM>& sgbm = *static_cast<Ptr<StereoSGBM>*>(userdata);
     sgbm->setNumDisparities(num_disparities);
 }
 
+void on_mouse(int event, int x, int y, int flags, void *userdata) {
+    switch(event) {
+    case EVENT_LBUTTONDOWN:
+        *static_cast<Point*>(userdata) = Point(x, y);
+    }
+}
