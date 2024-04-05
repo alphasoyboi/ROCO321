@@ -21,12 +21,15 @@
 #define SAD_WIN_SIZE_TB_NAME "SAD Window Size"
 #define NUM_DISPARITIES_TB_NAME "Number of Disparities"
 
-#define BASE_FOCAL_CONST 675166.
-
 #define SAD_WIN_SIZE_MIN 3
 #define SAD_WIN_SIZE_MAX 21
 #define NUM_DISPARITIES_MIN 16
 #define NUM_DISPARITIES_MAX 512
+
+#define DEFAULT_BASE_FOCAL_PRODUCT 675166.
+#define CALIB_DIST_START 350
+#define CALIB_DIST_INTERVAL 50
+#define CALIB_COUNT 10
 
 using namespace cv;
 using namespace std;
@@ -42,7 +45,7 @@ public:
     void push(T value) {
         buf_[head_] = value;
         head_ = (head_+1) % N;
-        if (count_ < N) {
+        if (!full()) {
             count_++;
         }
     }
@@ -53,15 +56,31 @@ public:
         }
         return static_cast<double>(sum)/count_;
     }
+    size_t count() const {
+        return count_;
+    }
+    bool full() const {
+        if (count_ < N) {
+            return false;
+        }
+        return true;
+    }
 private:
     T buf_[N];
     size_t head_ = 0;
     size_t count_ = 0;
 };
 
+enum LoopState {
+    CALIBRATE,
+    MEASURE,
+};
+
 void on_tb_sad_window_size(int pos, void* userdata);
 void on_tb_num_disparities(int pos, void* userdata);
 void on_mouse(int event, int x, int y, int flags, void *userdata);
+void draw_calibrate_ui(Mat& disp8, int distance, short disparity);
+void draw_measure_ui(Mat& left, Mat& disp8, const Point& disp_coords, double distance);
 
 int main(int argc, char** argv) {
     // connect with the owl and load calibration values
@@ -107,7 +126,7 @@ int main(int argc, char** argv) {
 
 
     //==================================================Create Block Matcher==============================================
-    int sad_window_size = 5;   //must be an odd number >=3
+    int sad_window_size = 7;   //must be an odd number >=3
     int num_disparities = 144; //must be divisable by 16
     Ptr<StereoSGBM> sgbm = StereoSGBM::create(0,16,3);
     sgbm->setBlockSize(sad_window_size);
@@ -136,8 +155,14 @@ int main(int argc, char** argv) {
     Mat left, right, eyes, disp, disp8;
     ContinuousAverage<double, 16> distance;
 
-    bool running = true;
+    double base_focal_product = DEFAULT_BASE_FOCAL_PRODUCT;
+    ContinuousAverage<short, 16> disparity;
+    ContinuousAverage<double, CALIB_COUNT> calibrations;
+
+    int key_press = -1;
+    bool running = true, calibrate = false;
     while (running) {
+
         // read the owls camera frames
         owl.getCameraFrames(left, right);
 
@@ -147,24 +172,34 @@ int main(int argc, char** argv) {
 
         // match left and right images to create disparity image
         sgbm->compute(left, right, disp);
-
-        distance.push(BASE_FOCAL_CONST/disp.at<short>(disp_coords));
-        putText(left, "distance: " + to_string(distance.average()), {5, left.rows-25}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 0), 1, LINE_AA);
-
         // convert disparity map to an 8-bit greyscale image so it can be displayed (do not use for mesurements)
         disp.convertTo(disp8, CV_8U, 255/(num_disparities*16.));
-        circle(disp8, disp_coords, 8, Scalar(255, 255, 255), 1);
 
-        // draw help text
-        putText(left, "press q to quit", {5, left.rows-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 0), 1, LINE_AA);
-        // combine left and right into one window
-        hconcat(left, right, eyes);
+        if (calibrate) {
+            short distance = CALIB_DIST_START + CALIB_DIST_INTERVAL*short(calibrations.count());
+            disparity.push(disp.at<short>(img_size/2));
+            if (key_press == ' ') {
+                calibrations.push(distance*disparity.average());
+                if (calibrations.full()) {
+                    base_focal_product = calibrations.average();
+                    calibrate = false;
+                }
+            }
+            draw_calibrate_ui(disp8, distance, short(disparity.average()));
+        } else {
+            distance.push(base_focal_product/disp.at<short>(disp_coords));
+            draw_measure_ui(left, disp8, disp_coords, distance.average());
+        }
+
         // display images
+        hconcat(left, right, eyes); // combine left and right into one window
         imshow(EYES_WIN_NAME, eyes);
         imshow(DISP_WIN_NAME, disp8);
 
-        // user control
-        switch (waitKey(10)) {
+        switch (key_press = waitKey(10)) {
+        case 'c':
+            calibrate = true;
+            break;
         case 'q':
             running = false;
             break;
@@ -172,10 +207,6 @@ int main(int argc, char** argv) {
     }
 
     return 0;
-}
-
-void calibrate() {
-
 }
 
 void on_tb_sad_window_size(int pos, void* userdata) {
@@ -201,4 +232,18 @@ void on_mouse(int event, int x, int y, int flags, void *userdata) {
     case EVENT_LBUTTONDOWN:
         *static_cast<Point*>(userdata) = Point(x, y);
     }
+}
+
+void draw_calibrate_ui(Mat& disp8, int distance, short disparity) {
+    circle(disp8, {disp8.cols/2, disp8.rows/2}, 8, Scalar(255, 255, 255), 1);
+    putText(disp8, "calibration mode:", {5, 25}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
+    putText(disp8, "move to " + to_string(distance) + "mm and press space", {5, 45}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
+    putText(disp8, "disparity: " + to_string(disparity), {5, disp8.rows-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
+}
+
+void draw_measure_ui(Mat& left, Mat& disp8, const Point& disp_coords, double distance) {
+        circle(disp8, disp_coords, 8, Scalar(255, 255, 255), 1);
+        putText(disp8, "distance: " + to_string(distance) + "mm", {5, left.rows-45}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
+        putText(disp8, "press c to calibrate", {5, left.rows-25}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
+        putText(disp8, "press q to quit", {5, left.rows-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
 }
