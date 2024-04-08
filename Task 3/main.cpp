@@ -121,29 +121,21 @@ int calculate_servo_movement(const Point& min_loc) {
     return int(diff * MOVE_FACTOR);
 }
 
-// calculate distance from each eye using law of sines
+// calculate distance from the left each eye using law of sines 
 //     A
-//     /\            |\
-//  c /  \ b     opp | \ hyp
-//   /____\          |__\
-//  B  a   C        adj  X
+//     /\    
+//  c /  \ b 
+//   /____\   B is the left eye
+//  B  a   C 
 //
-// b = a*sinB/sinA  sinX = opp/hyp
-// c = a*sinC/sinA  X = B or C
+// c = a*sinC/sinA
 float calculate_distance(float left_angle, float right_angle) {
+    // angles need to be subtracted from 90 degrees or pi/2
     left_angle = float(M_PI_2) - left_angle;
     right_angle = float(M_PI_2) - right_angle;
     float eye_angle = float(M_PI) - left_angle - right_angle;
-    // calculate each eye distance using sine laws
+    // calculate left eye distance using sine laws
     float left_dist = INTER_EYE_DIST*sin(right_angle)/sin(eye_angle);
-    float right_dist = INTER_EYE_DIST*sin(left_angle)/sin(eye_angle);
-    // use the smallest angle to calculate the distance from the point between the eyes
-    // opp=sinX*hyp
-    if (left_angle < right_angle) {
-        return left_dist*sin(left_angle);
-    } else {
-        return right_dist*sin(right_angle);
-    }
 }
 
 // draw target selection box and key binding info text

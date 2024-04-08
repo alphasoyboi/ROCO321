@@ -67,7 +67,7 @@ int main()
 
         Moments m = moments(filteredLeft, true);
         Point center{int(m.m10/m.m00), int(m.m01/m.m00)};
-        //center = (m.m00 < 10) ? Point{FRAME_CENTER_X, FRAME_CENTER_Y} : Point{int(m.m10/m.m00), int(m.m01/m.m00)};
+        // check if the center is out of frame
         center.x = (center.x > FRAME_HEIGHT) || (center.x < -FRAME_HEIGHT) ? FRAME_CENTER_X : center.x;
         center.y = (center.y > FRAME_HEIGHT) || (center.y < -FRAME_HEIGHT) ? FRAME_CENTER_Y : center.y;
         circle(left, center, 5, Scalar(128), -1);
@@ -82,10 +82,11 @@ int main()
             int xDiff = center.x - FRAME_CENTER_X;
             int xMove = int(xDiff * MOVE_FACTOR_X);
             int neckMove = (xl < 50) && (xl > -50) ? 0 : int(xl * MOVE_FACTOR_NECK);
-            owl.setServoRelativePositions(0, 0, xMove, 0, neckMove);
+
             int yDiff = center.y - FRAME_CENTER_Y;
             int yMove = int(yDiff * MOVE_FACTOR_Y);
-            owl.setServoRelativePositions(0, 0, 0, -yMove, 0);
+
+            owl.setServoRelativePositions(0, 0, xMove, -yMove, neckMove);
         } else {
             string statusText = "head tracking disbaled";
             putText(left, statusText, {5, FRAME_HEIGHT - 5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(0, 255, 0), 1, LINE_AA);

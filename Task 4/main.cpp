@@ -16,6 +16,9 @@
 
 #include "../owl.h"
 
+using namespace cv;
+using namespace std;
+
 #define EYES_WIN_NAME "eyes"
 #define DISP_WIN_NAME "disparity"
 #define SAD_WIN_SIZE_TB_NAME "SAD Window Size"
@@ -30,9 +33,6 @@
 #define CALIB_DIST_START 350
 #define CALIB_DIST_INTERVAL 50
 #define CALIB_COUNT 10
-
-using namespace cv;
-using namespace std;
 
 template <typename T, size_t N>
 class ContinuousAverage {
@@ -69,11 +69,6 @@ private:
     T buf_[N];
     size_t head_ = 0;
     size_t count_ = 0;
-};
-
-enum LoopState {
-    CALIBRATE,
-    MEASURE,
 };
 
 void on_tb_sad_window_size(int pos, void* userdata);
@@ -188,7 +183,7 @@ int main(int argc, char** argv) {
             draw_calibrate_ui(disp8, distance, short(disparity.average()));
         } else {
             distance.push(base_focal_product/disp.at<short>(disp_coords));
-            draw_measure_ui(left, disp8, disp_coords, distance.average());
+            draw_measure_ui(disp8, disp_coords, distance.average());
         }
 
         // display images
@@ -241,9 +236,9 @@ void draw_calibrate_ui(Mat& disp8, int distance, short disparity) {
     putText(disp8, "disparity: " + to_string(disparity), {5, disp8.rows-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
 }
 
-void draw_measure_ui(Mat& left, Mat& disp8, const Point& disp_coords, double distance) {
+void draw_measure_ui(Mat& disp8, const Point& disp_coords, double distance) {
         circle(disp8, disp_coords, 8, Scalar(255, 255, 255), 1);
         putText(disp8, "distance: " + to_string(distance) + "mm", {5, left.rows-45}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
-        putText(disp8, "press c to calibrate", {5, left.rows-25}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
-        putText(disp8, "press q to quit", {5, left.rows-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
+        putText(disp8, "press c to calibrate", {5, disp8.rows-25}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
+        putText(disp8, "press q to quit", {5, disp8.rows-5}, FONT_HERSHEY_PLAIN, 1.5, Scalar(255, 255, 255), 1, LINE_AA);
 }

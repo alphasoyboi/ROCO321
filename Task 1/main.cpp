@@ -23,14 +23,15 @@ Vec3f BGRtoHSV(const Vec3b& rgb)
     Mat3f hsvMat;
     cvtColor(bgrMat, hsvMat, COLOR_BGR2HSV);
 
-    // pull out pixel value to return
+    // pull out pixel value to return:
     Vec3f hsv = hsvMat(0,0);
     return hsv;
 }
 
 string getColorString(const Vec3f& hsv)
 {
-    // this is fairly naive, but works well for the categorized colors, even if slightly desaturated.
+    // this is fairly naive, but works well for the categorized colors, even if the color is 
+    // slightly desaturated.
     // make sure color isn't black by checking value (hsv[2]),
     // then compare upper and lower bounds of hue (hsv[0]), and finally saturation (hsv[1]).
     if (hsv[2] >= 0.2f) {
@@ -87,7 +88,7 @@ int main()
         case 27: // ESC
             running = false;
             break;
-	}
+	    }
     }
 }
 
